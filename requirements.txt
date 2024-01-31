@@ -1,0 +1,13 @@
+astropy==6.0.0
+astroquery==0.4.6
+black==23.11.0
+flake8-pyproject==1.2.3
+flake8==6.1.0
+isort==5.12.0
+mypy==1.7.1
+numpy==1.26.1
+pandas==2.1.2
+pylint==3.0.2
+pytest==7.4.3
+sgp4==2.23
+skyfield==1.47

@@ -1,0 +1,9 @@
+services:
+  pystrodynamics:
+    build:
+      target: install
+    entrypoint: tail -f /dev/null
+    volumes:
+      - type: bind
+        source: .
+        target: /app
