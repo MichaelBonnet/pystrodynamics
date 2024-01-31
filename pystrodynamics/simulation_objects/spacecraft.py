@@ -11,7 +11,7 @@ from pystrodynamics.simulation_objects.orbitalobject import OrbitalObject
 from pystrodynamics.utils.rotations import gcrs_to_lvlh_rotation
 
 
-class OrbitalObject(OrbitalObject):
+class Spacecraft(OrbitalObject):
     """Simulation object for things orbiting Earth."""
     
     def __init__(self, name: str, initial_epoch: datetime, tle_line1: str, tle_line2: str, norad_id: Optional[str] = None) -> None:
@@ -39,11 +39,11 @@ class OrbitalObject(OrbitalObject):
             raise TypeError(f"arg 'body_to_gcrs_rotation' must be of type R, not {type(body_to_gcrs_rotation)}")
         self.body_to_gcrs_rotation = body_to_gcrs_rotation
 
-    def get_body_to_gcrs_rotation(self) -> None:
+    def get_body_to_gcrs_rotation(self) -> R:
         if self.body_to_gcrs_rotation is None:
             raise AttributeError(f"attribute 'self.body_to_gcrs_rotation' of Spacecraft '{self.name}' has not yet been set.")
         return self.body_to_gcrs_rotation
 
-    def get_body_to_lvlh_rotation(self) -> None:
+    def get_body_to_lvlh_rotation(self) -> R:
         gcrs_to_lvlh_rotation_obj = gcrs_to_lvlh_rotation(self.position_vector_gcrs, self.velocity_vector_gcrs)
         return self.body_to_gcrs_rotation * gcrs_to_lvlh_rotation_obj
