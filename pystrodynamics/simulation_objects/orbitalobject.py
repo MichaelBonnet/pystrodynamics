@@ -33,8 +33,10 @@ class OrbitalObject(SimulationObject):
             TypeError: if arguments are not of expected type.
         
         """
+        # Argument checking
         if not isinstance(initial_epoch, datetime):
-            raise TypeError(f"arg initial_epoch must be of type datetime, not {str(type(initial_epoch))}")
+            raise TypeError(f"arg 'initial_epoch' must be of type datetime, not {type(initial_epoch)}")
+        
         super().__init__(name)
         self.tle_line1 = tle_line1
         self.tle_line2 = tle_line2
@@ -55,7 +57,7 @@ class OrbitalObject(SimulationObject):
 
         """
         if not isinstance(epoch, datetime):
-            raise TypeError(f"arg epoch must be of type datetime, not {str(type(epoch))}")
+            raise TypeError(f"arg 'epoch' must be of type datetime, not {type(epoch)}")
         epoch = epoch.replace(tzinfo=timezone.utc)
         self.epoch = epoch
         self.__position_vector_teme, self.__velocity_vector_teme = tle_and_epoch_to_state_vectors(self.tle_line1, self.tle_line2, self.epoch, "TEME")

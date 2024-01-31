@@ -26,7 +26,7 @@ class TheSun(SimulationObject):
         
         """
         if not isinstance(initial_epoch, datetime):
-            raise TypeError(f"arg initial_epoch must be of type datetime, not {str(type(initial_epoch))}")
+            raise TypeError(f"arg 'initial_epoch' must be of type datetime, not {type(initial_epoch)}")
         super().__init__(name)
         self.update_state(initial_epoch)
 
@@ -44,7 +44,7 @@ class TheSun(SimulationObject):
 
         """
         if not isinstance(epoch, datetime):
-            raise TypeError(f"arg epoch must be of type datetime, not {str(type(epoch))}")
+            raise TypeError(f"arg 'epoch' must be of type datetime, not {type(epoch)}")
         epoch = epoch.replace(tzinfo=timezone.utc)
         self.epoch = epoch
 

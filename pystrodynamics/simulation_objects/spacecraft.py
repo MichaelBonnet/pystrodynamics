@@ -1,5 +1,5 @@
 # Standard library imports
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 
 # Third party imports
@@ -8,14 +8,21 @@ from scipy.spatial.transform import Rotation as R
 
 # Local imports
 from pystrodynamics.simulation_objects.orbitalobject import OrbitalObject
+from pystrodynamics.utils.sun import get_earth_sun_vector_gcrs_at_epoch, get_earth_sun_vector_teme_at_epoch
+from pystrodynamics.simulation_objects.spacecraft_modules.basic_sensor import BasicSensor
 from pystrodynamics.utils.rotations import gcrs_to_lvlh_rotation
 
 
 class Spacecraft(OrbitalObject):
-    """Simulation object for things orbiting Earth."""
+    """
+    Represents a spacecraft for simulation purposes, including propagation based on TLE (Two-Line Elements) data
+    and the ability to compute rotations from body to various reference frames.
+    
+    Inherits from OrbitalObject to utilize orbital mechanics and state propagation functionalities.
+    """
     
     def __init__(self, name: str, initial_epoch: datetime, tle_line1: str, tle_line2: str, norad_id: Optional[str] = None) -> None:
-        """Initializes an OrbitalObject instance.
+        """Initializes a Spacecraft instance.
         
         Args:
             name (str): the display name of the object. Defaults to 'Sun'.
@@ -33,17 +40,158 @@ class Spacecraft(OrbitalObject):
         """
         super().__init__(name, initial_epoch, tle_line1, tle_line2, norad_id)
         self.body_to_gcrs_rotation = None
+        self.sensors = []
+
+    # Position Vectors
+
+    @property
+    def spacecraft_earth_vector_teme(self) -> np.ndarray:
+        return -1 * self.position_vector_teme
+
+    @property
+    def spacecraft_earth_vector_gcrs(self) -> np.ndarray:
+        return -1 * self.position_vector_gcrs
+
+    @property
+    def spacecraft_earth_vector_lvlh(self) -> np.ndarray:
+        position_gcrs, velocity_gcrs = self.position_and_velocity_vectors_gcrs
+        gcrs_lvlh_rotation = gcrs_to_lvlh_rotation(position_gcrs, velocity_gcrs)
+        return gcrs_lvlh_rotation.apply(self.spacecraft_earth_vector_gcrs)
+        pass
+
+    @property
+    def spacecraft_sun_vector_teme(self) -> np.ndarray:
+        earth_sun_vector_teme = get_earth_sun_vector_teme_at_epoch(self.epoch)
+        return earth_sun_vector_teme - self.position_vector_teme
+
+    @property
+    def spacecraft_sun_vector_gcrs(self) -> np.ndarray:
+        earth_sun_vector_gcrs = get_earth_sun_vector_gcrs_at_epoch(self.epoch)
+        return earth_sun_vector_gcrs - self.position_vector_gcrs
+
+    @property
+    def spacecraft_sun_vector_lvlh(self) -> np.ndarray:
+        position_gcrs, velocity_gcrs = self.position_and_velocity_vectors_gcrs
+        gcrs_lvlh_rotation = gcrs_to_lvlh_rotation(position_gcrs, velocity_gcrs)
+        return gcrs_lvlh_rotation.apply(self.spacecraft_sun_vector_gcrs)
+
+    # Sensor things
+
+    def add_sensor(self, sensor: BasicSensor) -> None:
+        if not isinstance(sensor, BasicSensor):
+            raise TypeError(f"arg 'sensor' must be of type BasicSensor, not {type(sensor)}")
+        self.sensors.append(sensor)
+
+    def check_sensor_sun_exclusion_zones(self, reference_frame: Optional[str] = "GCRS", body_to_reference_frame: Optional[R] = None) -> list[str]:
+        # Argument checking
+        if not isinstance(reference_frame, str):
+            raise TypeError(f"arg 'reference_frame' must be of type str, not {type(reference_frame)}")
+        if reference_frame not in ["GCRS", "TEME", "LVLH"]:
+            raise ValueError(f"'reference_frame' must be one of ['GCRS', 'TEME', 'LVLH'] (gave {reference_frame}")
+
+        sun_exclusion_zones = []
+        
+        match reference_frame:
+            case "GCRS":
+                for sensor in self.sensors:
+                    if sensor.sun_exclusion_zone_violated(self.get_body_to_gcrs_rotation(), self.spacecraft_sun_vector_gcrs):
+                        sun_exclusion_zones.append(sensor.name)
+            case "TEME":
+                for sensor in self.sensors:
+                    if sensor.sun_exclusion_zone_violated(body_to_reference_frame, self.spacecraft_sun_vector_teme):
+                        sun_exclusion_zones.append(sensor.name)
+            case "LVLH":
+                for sensor in self.sensors:
+                    if sensor.sun_exclusion_zone_violated(self.get_body_to_lvlh_rotation(), self.spacecraft_sun_vector_lvlh):
+                        sun_exclusion_zones.append(sensor.name)
+        
+        return sun_exclusion_zones
+
+    def check_sensor_earth_exclusion_zones(self, reference_frame: Optional[str] = "TEME", body_to_reference_frame: Optional[R] = None) -> list[str]:
+        # Argument checking
+        if not isinstance(reference_frame, str):
+            raise TypeError(f"arg 'reference_frame' must be of type str, not {type(reference_frame)}")
+        if reference_frame not in ["GCRS", "TEME", "LVLH"]:
+            raise ValueError(f"'reference_frame' must be one of ['GCRS', 'TEME', 'LVLH'] (gave {reference_frame}")
+        
+        earth_exclusion_zones = []
+
+        match reference_frame:
+            case "GCRS":
+                for sensor in self.sensors:
+                    if sensor.earth_exclusion_zone_violated(self.get_body_to_gcrs_rotation(), self.spacecraft_earth_vector_gcrs):
+                        earth_exclusion_zones.append(sensor.name)
+            case "TEME":
+                for sensor in self.sensors:
+                    if sensor.earth_exclusion_zone_violated(body_to_reference_frame, self.spacecraft_earth_vector_teme):
+                        earth_exclusion_zones.append(sensor.name)
+            case "LVLH":
+                for sensor in self.sensors:
+                    if sensor.earth_exclusion_zone_violated(self.get_body_to_lvlh_rotation(), self.spacecraft_earth_vector_lvlh):
+                        earth_exclusion_zones.append(sensor.name)
+
+        return earth_exclusion_zones
+
+    def check_sensor_sun_and_earth_exclusion_zones(self, reference_frame: Optional[str] = "GCRS", body_to_reference_frame: Optional[R] = None) -> tuple[list[str], list[str]]:
+        # Argument checking
+        if not isinstance(reference_frame, str):
+            raise TypeError(f"arg 'reference_frame' must be of type str, not {type(reference_frame)}")
+        if reference_frame not in ["GCRS", "TEME", "LVLH"]:
+            raise ValueError(f"'reference_frame' must be one of ['GCRS', 'TEME', 'LVLH'] (gave {reference_frame}")
+
+        sun_exclusion_zones = []
+        earth_exclusion_zones = []
+
+        if reference_frame == "TEME":
+            sun_exclusion_zones = self.check_sensor_sun_exclusion_zones(reference_frame, body_to_reference_frame)
+            earth_exclusion_zones = self.check_sensor_earth_exclusion_zones(reference_frame, body_to_reference_frame)
+        
+        sun_exclusion_zones = self.check_sensor_sun_exclusion_zones(reference_frame)
+        earth_exclusion_zones = self.check_sensor_earth_exclusion_zones(reference_frame)
+
+        return sun_exclusion_zones, earth_exclusion_zones
+
+    # Rotation things
 
     def set_body_to_gcrs_rotation(self, body_to_gcrs_rotation: R) -> None:
+        """
+        Sets the rotation from the spacecraft body frame to the Geocentric Celestial Reference System (GCRS) frame.
+
+        Args:
+            body_to_gcrs_rotation (R): A scipy Rotation object representing the rotation from body to GCRS frame.
+
+        Raises:
+            TypeError: If `body_to_gcrs_rotation` is not an instance of scipy's Rotation class.
+        """
         if not isinstance(body_to_gcrs_rotation, R):
             raise TypeError(f"arg 'body_to_gcrs_rotation' must be of type R, not {type(body_to_gcrs_rotation)}")
         self.body_to_gcrs_rotation = body_to_gcrs_rotation
 
     def get_body_to_gcrs_rotation(self) -> R:
+        """
+        Retrieves the spacecraft's rotation from body frame to GCRS frame.
+
+        Returns:
+            R: A scipy Rotation object representing the rotation from body to GCRS frame.
+
+        Raises:
+            AttributeError: If the body to GCRS rotation has not been set.
+        """
         if self.body_to_gcrs_rotation is None:
             raise AttributeError(f"attribute 'self.body_to_gcrs_rotation' of Spacecraft '{self.name}' has not yet been set.")
         return self.body_to_gcrs_rotation
 
     def get_body_to_lvlh_rotation(self) -> R:
+        """
+        Computes and retrieves the spacecraft's rotation from body frame to Local Vertical Local Horizontal (LVLH) frame.
+
+        Returns:
+            R: A scipy Rotation object representing the rotation from body to LVLH frame.
+
+        Raises:
+            AttributeError: If the body to GCRS rotation has not been set.
+        """
+        if self.body_to_gcrs_rotation is None:
+            raise AttributeError(f"attribute 'self.body_to_gcrs_rotation' of Spacecraft '{self.name}' has not yet been set.")
         gcrs_to_lvlh_rotation_obj = gcrs_to_lvlh_rotation(self.position_vector_gcrs, self.velocity_vector_gcrs)
         return self.body_to_gcrs_rotation * gcrs_to_lvlh_rotation_obj
