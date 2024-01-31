@@ -85,6 +85,18 @@ def tle_and_epoch_to_state_vectors(
         velocity_vector (np.ndarray): the velocity vector of the object in the desired frame at given epoch
 
     """
+    # Argument checking
+    if not isinstance(tle_line1, str):
+        raise TypeError(f"arg 'tle_line1' must be of type str, not {type(tle_line1)}")
+    if not isinstance(tle_line2, str):
+        raise TypeError(f"arg 'tle_line2' must be of type str, not {type(tle_line2)}")
+    if not isinstance(epoch, datetime):
+        raise TypeError(f"arg 'epoch' must be of type datetime, not {type(epoch)}")
+    if not isinstance(reference_frame, str):
+        raise TypeError(f"arg 'reference_frame' must be of type str, not {type(reference_frame)}")
+    if reference_frame not in ["GCRS", "TEME"]:
+        raise ValueError(f"'reference_frame' must be one of ['GCRS', 'TEME'] (gave {reference_frame}")
+    
     epoch = epoch.replace(tzinfo=timezone.utc)
     if reference_frame == "TEME":
         # Parse the TLE data
@@ -110,4 +122,9 @@ def tle_and_epoch_to_state_vectors(
         return position_vector_gcrs, velocity_vector_gcrs
 
 def state_vectors_to_coe(position_vector: np.ndarray, velocity_vector: np.ndarray) -> ClassicalOrbitalElements:
+    # Argument checking
+    if not isinstance(position_vector, np.ndarray):
+        raise TypeError(f"arg 'position_vector' must be of type np.ndarray, not {type(position_vector)}")
+    if not isinstance(velocity_vector, np.ndarray):
+        raise TypeError(f"arg 'velocity_vector' must be of type np.ndarray, not {type(velocity_vector)}")
     return ClassicalOrbitalElements(rv2coe(position_vector, velocity_vector, wgs72.mu))

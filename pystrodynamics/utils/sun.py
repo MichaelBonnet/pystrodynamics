@@ -20,8 +20,10 @@ def get_earth_sun_vector_gcrs_at_epoch(epoch: datetime) -> np.ndarray:
         earth_sun_vector_gcrs_at_epoch (np.ndarray): the position of the sun in GCRS frame at epoch.
 
     """
+    # Argument checking
     if not isinstance(epoch, datetime):
-        raise TypeError(f"arg epoch must be of type datetime, not {str(type(epoch))}")
+        raise TypeError(f"arg 'epoch' must be of type datetime, not {str(type(epoch))}")
+
     ts = load.timescale()
     epoch = epoch.replace(tzinfo=timezone.utc)
     t = ts.from_datetime(epoch)
@@ -43,8 +45,10 @@ def get_earth_sun_vector_teme_at_epoch(epoch: datetime) -> np.ndarray:
         earth_sun_vector_teme_at_epoch (np.ndarray): the position of the sun in TEME frame at epoch.
 
     """
+    # Argument checking
     if not isinstance(epoch, datetime):
         raise TypeError(f"arg epoch must be of type datetime, not {str(type(epoch))}")
+
     ts = load.timescale()
     epoch = epoch.replace(tzinfo=timezone.utc)
     t = ts.from_datetime(epoch)
