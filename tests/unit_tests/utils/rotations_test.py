@@ -12,7 +12,7 @@ def test_gcrs_to_lvlh_rotation_with_validation_data():
 
 def test_gcrs_to_lvlh_rotation_bad_vectors():
     # Bad position vector size
-    with pytest.raises(TypeError):
+    with pytest.raises(IndexError):
         gcrs_to_lvlh_rotation(np.random.rand(2), np.random.rand(3))
 
     # Bad position vector type
@@ -20,7 +20,7 @@ def test_gcrs_to_lvlh_rotation_bad_vectors():
         gcrs_to_lvlh_rotation(None, np.random.rand(3))
 
     # Bad velocity vector size
-    with pytest.raises(TypeError):
+    with pytest.raises(IndexError):
         gcrs_to_lvlh_rotation(np.random.rand(3), np.random.rand(2))
 
     # Bad velocity vector type
