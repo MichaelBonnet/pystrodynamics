@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import numpy as np
 from sgp4.api import Satrec, WGS72
-from sgp4.io import twoline2rv, rv2coe
+from sgp4.ext import rv2coe
 from sgp4.earth_gravity import wgs72
 from skyfield.api import EarthSatellite, load
 
