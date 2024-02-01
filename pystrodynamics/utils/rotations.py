@@ -27,12 +27,20 @@ def gcrs_to_lvlh_rotation(position_vector_gcrs: np.ndarray, velocity_vector_gcrs
         gcrs_to_lvlh_rotation (R): A scipy.spatial.transform.Rotation object representing the 
                                    rotation matrix from GCRS frame to LVLH frame.
 
+    Raises:
+        TypeError: if an argument is not of expected type.
+        IndexError: if either vector is not of size 3.
+
     """
     # Argument checking
     if not isinstance(position_vector_gcrs, np.ndarray):
         raise TypeError(f"arg 'position_vector_gcrs' must be of type np.ndarray, not {type(position_vector_gcrs)}")
     if not isinstance(velocity_vector_gcrs, np.ndarray):
         raise TypeError(f"arg 'velocity_vector_gcrs' must be of type np.ndarray, not {type(velocity_vector_gcrs)}")
+    if len(position_vector_gcrs) != 3:
+        raise IndexError(f"'position_vector_gcrs' must be of length 3, not {len(position_vector_gcrs)}")
+    if len(velocity_vector_gcrs) != 3:
+        raise IndexError(f"'velocity_vector_gcrs' must be of length 3, not {len(velocity_vector_gcrs)}")
 
     r_v_cross = np.cross(position_vector_gcrs, velocity_vector_gcrs)
     x = unit_vector(position_vector_gcrs)

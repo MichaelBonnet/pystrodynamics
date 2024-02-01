@@ -1,4 +1,9 @@
+# Standard library imports
 from abc import ABC, abstractmethod
+
+# Third party imports
+
+# Local imports
 
 class SpacecraftModule(ABC):
     def __init__(self, name: str):
